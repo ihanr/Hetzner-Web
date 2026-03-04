@@ -16,3 +16,5 @@ Initial unified release of the Web dashboard and Automation monitor.
 - Improve: add request timeouts for automation Hetzner API calls to avoid indefinite blocking.
 - Improve: support Hetzner API pagination for server/snapshot listing (web + automation), preventing partial data on larger accounts.
 - Security: make Basic Auth comparison constant-time and return proper `WWW-Authenticate` header on 401.
+- DevOps: add GitHub Actions CI workflow to compile-check all Python files on push/PR.
+- Cleanup: remove obsolete `version` field from `docker-compose.yml` to avoid Compose warnings.

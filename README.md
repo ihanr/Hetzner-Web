@@ -20,6 +20,7 @@ A lightweight Hetzner traffic dashboard + automation monitor. Includes a web UI,
 - [Config File Locations](#config-file-locations)
 - [Troubleshooting](#troubleshooting)
 - [Project Layout](#project-layout)
+- [GitHub Collaboration](#github-collaboration)
 - [FAQ](#faq)
 - [Security Notes](#security-notes)
 
@@ -177,6 +178,30 @@ Quick checks:
 
 More docs:
 - Automation docs: `automation/README.md`
+
+---
+
+<a id="github-collaboration"></a>
+## ![Tools](docs/icon-tools.svg) GitHub Collaboration
+
+This repository includes basic GitHub collaboration guardrails:
+
+- CI workflow: `.github/workflows/ci.yml`
+  - Runs Python compile checks on push and pull requests
+- PR template: `.github/pull_request_template.md`
+- Issue templates: `.github/ISSUE_TEMPLATE/`
+
+Recommended contributor flow:
+
+```bash
+git checkout -b feat/your-change
+# edit files
+python3 -m py_compile main.py automation/*.py scripts/*.py
+git add .
+git commit -m "feat: your change"
+git push origin feat/your-change
+# then open a PR on GitHub
+```
 
 ---
 

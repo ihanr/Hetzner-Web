@@ -20,6 +20,7 @@
 - [配置文件位置](#配置文件位置)
 - [排错指南](#排错指南)
 - [项目结构](#项目结构)
+- [GitHub 协作规范](#github-协作规范)
 - [常见问题](#常见问题)
 - [安全说明](#安全说明)
 
@@ -177,6 +178,30 @@ sudo systemctl restart hetzner-web.service
 
 相关文档：
 - Automation 说明：`automation/README_CN.md`
+
+---
+
+<a id="github-协作规范"></a>
+## ![Tools](docs/icon-tools.svg) GitHub 协作规范
+
+仓库已内置基础协作规范：
+
+- CI 工作流：`.github/workflows/ci.yml`
+  - push / pull request 自动做 Python 编译检查
+- PR 模板：`.github/pull_request_template.md`
+- Issue 模板：`.github/ISSUE_TEMPLATE/`
+
+建议贡献流程：
+
+```bash
+git checkout -b feat/your-change
+# 修改代码
+python3 -m py_compile main.py automation/*.py scripts/*.py
+git add .
+git commit -m "feat: your change"
+git push origin feat/your-change
+# 然后在 GitHub 发起 PR
+```
 
 ---
 

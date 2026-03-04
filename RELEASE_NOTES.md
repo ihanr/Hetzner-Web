@@ -18,3 +18,5 @@ Initial unified release of the Web dashboard and Automation monitor.
 - Security: make Basic Auth comparison constant-time and return proper `WWW-Authenticate` header on 401.
 - DevOps: add GitHub Actions CI workflow to compile-check all Python files on push/PR.
 - Cleanup: remove obsolete `version` field from `docker-compose.yml` to avoid Compose warnings.
+- GitHub: add PR template and issue templates to standardize collaboration and bug reporting.
+- Docs: add GitHub collaboration section in both English and Chinese README.

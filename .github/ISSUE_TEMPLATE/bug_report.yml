@@ -1,0 +1,38 @@
+name: Bug Report
+description: Report a problem in Hetzner-Web
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: textarea
+    id: desc
+    attributes:
+      label: What happened?
+      description: Describe the bug and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to ...
+        2. Run ...
+        3. See error ...
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      placeholder: |
+        - OS:
+        - Python:
+        - Docker:
+        - Hetzner-Web version/commit:
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      render: shell

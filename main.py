@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hmac
 import json
 import os
 import shutil
@@ -40,26 +41,26 @@ CF_VERIFY_DELAY_SECONDS = 120
 
 
 def _load_yaml(path: str) -> Dict[str, Any]:
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
 def _save_yaml(path: str, data: Dict[str, Any]) -> None:
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         yaml.safe_dump(data, f, sort_keys=False, allow_unicode=False)
 
 
 def _load_json(path: str) -> Dict[str, Any]:
     if not os.path.exists(path):
         return {}
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def _save_json(path: str, data: Dict[str, Any]) -> None:
     tmp = f"{path}.tmp"
-    with open(tmp, "w") as f:
-        json.dump(data, f)
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
     os.replace(tmp, path)
 
 
@@ -104,7 +105,7 @@ def _load_report_state() -> Dict[str, Any]:
     if not os.path.exists(REPORT_STATE_PATH):
         return {}
     try:
-        with open(REPORT_STATE_PATH, "r") as f:
+        with open(REPORT_STATE_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return {}
@@ -112,8 +113,8 @@ def _load_report_state() -> Dict[str, Any]:
 
 def _save_report_state(state: Dict[str, Any]) -> None:
     _backup_report_state()
-    with open(REPORT_STATE_PATH, "w") as f:
-        json.dump(state, f)
+    with open(REPORT_STATE_PATH, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, separators=(",", ":"))
 
 
 def _backup_report_state() -> None:
@@ -868,13 +869,32 @@ class HetznerClient:
 
     def _request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         url = f"{self.BASE_URL}/{endpoint}"
-        resp = requests.request(method, url, headers=self.headers, timeout=20, **kwargs)
+        timeout = kwargs.pop("timeout", 20)
+        resp = requests.request(method, url, headers=self.headers, timeout=timeout, **kwargs)
         resp.raise_for_status()
         return resp.json()
 
+    def _request_paginated(self, endpoint: str, result_key: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        page = 1
+        items: List[Dict[str, Any]] = []
+        base_params = dict(params or {})
+        while True:
+            req_params = {**base_params, "page": page, "per_page": 50}
+            data = self._request("GET", endpoint, params=req_params)
+            chunk = data.get(result_key, [])
+            if not chunk:
+                break
+            items.extend(chunk)
+            pagination = data.get("meta", {}).get("pagination", {})
+            if not pagination:
+                break
+            if page >= int(pagination.get("last_page") or page):
+                break
+            page += 1
+        return items
+
     def get_servers(self) -> List[Dict[str, Any]]:
-        data = self._request("GET", "servers")
-        return data.get("servers", [])
+        return self._request_paginated("servers", "servers")
 
     def get_server(self, server_id: int) -> Optional[Dict[str, Any]]:
         try:
@@ -921,8 +941,7 @@ class HetznerClient:
 
     def get_snapshots(self) -> List[Dict[str, Any]]:
         try:
-            data = self._request("GET", "images", params={"type": "snapshot"})
-            snapshots = data.get("images", [])
+            snapshots = self._request_paginated("images", "images", params={"type": "snapshot"})
             snapshots.sort(key=lambda x: x.get("created", ""), reverse=True)
             return snapshots
         except Exception:
@@ -1072,10 +1091,20 @@ def _require_auth(request: Request) -> None:
     cfg = _load_json(WEB_CONFIG_PATH)
     auth = _get_basic_auth(request)
     if not auth:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Basic realm=\"Hetzner Web\""},
+        )
     user, pwd = auth
-    if user != cfg.get("username") or pwd != cfg.get("password"):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    expected_user = str(cfg.get("username") or "")
+    expected_pwd = str(cfg.get("password") or "")
+    if not (hmac.compare_digest(user, expected_user) and hmac.compare_digest(pwd, expected_pwd)):
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Basic realm=\"Hetzner Web\""},
+        )
 
 
 def _parse_int_or_default(value: Any, default: int) -> int:

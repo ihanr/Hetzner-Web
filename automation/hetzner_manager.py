@@ -18,18 +18,37 @@ class HetznerManager:
     
     def _request(self, method: str, endpoint: str, **kwargs) -> Dict:
         url = f"{self.BASE_URL}/{endpoint}"
+        timeout = kwargs.pop("timeout", 20)
         try:
-            response = requests.request(method, url, headers=self.headers, **kwargs)
+            response = requests.request(method, url, headers=self.headers, timeout=timeout, **kwargs)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
             self.logger.error(f"API 请求失败: {e}")
             raise
+
+    def _request_paginated(self, endpoint: str, result_key: str, params: Optional[Dict] = None) -> List[Dict]:
+        page = 1
+        items: List[Dict] = []
+        base_params = dict(params or {})
+        while True:
+            req_params = {**base_params, "page": page, "per_page": 50}
+            response = self._request("GET", endpoint, params=req_params)
+            chunk = response.get(result_key, [])
+            if not chunk:
+                break
+            items.extend(chunk)
+            pagination = response.get("meta", {}).get("pagination", {})
+            if not pagination:
+                break
+            if page >= int(pagination.get("last_page") or page):
+                break
+            page += 1
+        return items
     
     def get_servers(self) -> List[Dict]:
         self.logger.info("获取服务器列表...")
-        response = self._request("GET", "servers")
-        return response.get("servers", [])
+        return self._request_paginated("servers", "servers")
     
     def get_server(self, server_id: int) -> Optional[Dict]:
         try:
@@ -168,8 +187,9 @@ class HetznerManager:
 
     def get_snapshots(self) -> List[Dict]:
         try:
-            response = self._request("GET", "images", params={"type": "snapshot"})
-            return response.get("images", [])
+            snapshots = self._request_paginated("images", "images", params={"type": "snapshot"})
+            snapshots.sort(key=lambda x: x.get("created", ""), reverse=True)
+            return snapshots
         except Exception as e:
             self.logger.error(f"获取快照列表失败: {e}")
             return []

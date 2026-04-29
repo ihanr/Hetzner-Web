@@ -2,7 +2,7 @@
 
 [English](README.md) | [中文](README.zh.md)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED)](#快速开始)
 
 一个轻量的 Hetzner 流量控制台 + 自动化监控工具。支持可视化仪表盘、Telegram 通知/命令、自动重建、DNS 检查。
@@ -16,7 +16,6 @@
 - [安装方式](#安装方式)
 - [环境要求](#环境要求)
 - [配置设置](#配置设置)
-- [Telegram 配置](#telegram-配置)
 - [配置文件位置](#配置文件位置)
 - [排错指南](#排错指南)
 - [项目结构](#项目结构)
@@ -29,7 +28,7 @@
 <a id="快速开始"></a>
 ## ![Start](docs/icon-start.svg) 快速开始
 
-第一次使用直接选二合一脚本，一次性装好 Web + automation + Telegram 支持。
+使用全自动一键脚本，一次性装好 Web 控制台 + 流量监控 + Telegram 支持。
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/liuweiqiang0523/Hetzner-Web/main/scripts/install-all.sh | sudo bash
@@ -69,7 +68,7 @@ curl -fsSL https://raw.githubusercontent.com/liuweiqiang0523/Hetzner-Web/main/sc
 <a id="安装方式"></a>
 ## ![Install](docs/icon-install.svg) 安装方式
 
-推荐使用一键安装脚本，一次性装好 Web 控制台 + 流量监控：
+推荐使用一键安装脚本（Docker 模式）：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/liuweiqiang0523/Hetzner-Web/main/scripts/install-all.sh | sudo bash
@@ -90,10 +89,8 @@ curl -fsSL https://raw.githubusercontent.com/liuweiqiang0523/Hetzner-Web/main/sc
 
 ```bash
 git --version
-python3 --version
 docker --version
 docker compose version
-systemctl --version
 ```
 
 如果缺少，请先安装（Ubuntu/Debian 可用 apt）。
@@ -103,49 +100,26 @@ systemctl --version
 <a id="配置设置"></a>
 ## ![Config](docs/icon-config.svg) 配置设置
 
-**Web 配置**
-- `config.yaml`：填写 `hetzner.api_token`
-- `web_config.json`：填写 `username` / `password`（示例默认是 `admin` / `CHANGE_ME`，必须修改）
+所有的配置现在统一在根目录的 `config.yaml` 中完成。
 
-**Automation 配置**
-- `automation/config.yaml`：填写 Hetzner/Telegram/Cloudflare 等
+**核心配置项：**
+- `hetzner.api_token`：填写你的 Hetzner API Token
+- `web.username` / `web.password`：Web 登录凭证（默认 admin / CHANGE_ME，**必须修改**）
+- `telegram.bot_token` / `telegram.chat_id`：Telegram 机器人设置
 
-**可选调优**
-- `cloudflare.update_retries`, `cloudflare.update_retry_delay`, `cloudflare.rebuild_sync_delay_seconds`：DNS 更新重试与重建后补偿同步
-- `qbittorrent.rebuild_cooldown_seconds`, `qbittorrent.instances[].login_retries`, `qbittorrent.instances[].login_retry_delay`：登录重试与冷却期
-- Telegram：`/dnsync` 可手动触发 DNS 同步
+**可选调优：**
+- `cloudflare.update_retries`：DNS 更新重试次数
+- `qbittorrent.instances`：qBittorrent 统计实例配置
 - `report_state.json` 每日备份到 `report_state_backups/`（仅保留最近 3 份）
 
-应用配置：
+**应用配置：**
 
 ```bash
 cd /opt/hetzner-web
-
 docker compose up -d --build
-sudo systemctl restart hetzner-web.service
 ```
 
 打开：`http://<你的服务器IP>:1227`
-
----
-
-<a id="telegram-配置"></a>
-## ![Telegram](docs/icon-telegram.svg) Telegram 配置
-
-在 `automation/config.yaml` 中填：
-
-```yaml
-telegram:
-  enabled: true
-  bot_token: "你的 Bot Token"
-  chat_id: "你的 Chat ID"
-```
-
-然后重启 automation：
-
-```bash
-sudo systemctl restart hetzner-web.service
-```
 
 ---
 
@@ -154,9 +128,9 @@ sudo systemctl restart hetzner-web.service
 
 ![配置文件速查](docs/config-files.light.svg)
 
-- Web：`/opt/hetzner-web/config.yaml`
-- Web 登录：`/opt/hetzner-web/web_config.json`
-- Automation：`/opt/hetzner-web/automation/config.yaml`
+- **主配置文件**：`/opt/hetzner-web/config.yaml`
+- **运行状态**：`/opt/hetzner-web/report_state.json`
+- **环境变量示例**：`/opt/hetzner-web/.env.example`
 
 ---
 
@@ -166,9 +140,8 @@ sudo systemctl restart hetzner-web.service
 ![排错流程](docs/troubleshooting-flow.light.svg)
 
 一键自检：
-- `docker ps`
-- `sudo systemctl status hetzner-web.service`
-- `sudo journalctl -u hetzner-web.service -n 50 --no-pager`
+- `docker ps`（确认容器在运行）
+- `docker compose logs -f`（查看实时日志）
 
 ---
 
@@ -183,7 +156,7 @@ sudo systemctl restart hetzner-web.service
   - `app/core/`: 核心配置与全局状态管理
   - `app/utils/`: 统计计算与格式化工具集
 - **前端界面** (`static/`): Vue 编译后的静态资源
-- **自动化脚本** (`automation/`): 独立运行的监控逻辑（CLI/Systemd）
+- **脚本工具** (`scripts/`): 一键安装与维护脚本
 
 ---
 
@@ -201,7 +174,7 @@ sudo systemctl restart hetzner-web.service
 ```bash
 git checkout -b feat/your-change
 # 修改代码
-python3 -m py_compile app/*.py app/*/*.py automation/*.py
+python3 -m py_compile app/*.py app/*/*.py
 git add .
 git commit -m "feat: your change"
 git push origin feat/your-change
@@ -217,27 +190,21 @@ Q：打开不了网页？
 A：先确认 1227 端口放行，再用 `docker ps` 看容器是否在运行。
 
 Q：Telegram 没有消息？  
-A：确认 `automation/config.yaml` 里的 `bot_token`/`chat_id`，然后重启服务。
+A：确认 `config.yaml` 里的 `bot_token`/`chat_id` 是否开启，然后运行 `docker compose up -d --build` 重启。
 
 Q：改了配置没生效？  
-A：Web 运行 `docker compose up -d --build`，automation 运行 `systemctl restart`。
+A：统一运行 `docker compose up -d --build`。
 
 Q：重建后 DNS 还是旧 IP？  
-A：Telegram 执行 `/dnsync` 或 `/dnstest <ID>` 强制更新，然后用 `/dnscheck <ID>` 验证。如果仍是旧 IP，检查 Cloudflare 记录是否存在、Token 权限是否足够，以及新服务器是否已分配 IPv4。
+A：Telegram 执行 `/dnsync` 强制同步，或检查 Cloudflare Token 权限。
 
 Q：配置文件在哪里？  
-A：Web 在 `/opt/hetzner-web/`，automation 在 `/opt/hetzner-web/automation/`。
-
-Q：我该选哪个安装方式？  
-A：大多数人用二合一即可，除非你明确只要其中一个服务。
-
-Q：能不能重复跑安装脚本？  
-A：默认不会覆盖已有目录，除非你显式设置 `ALLOW_UPDATE=1`。
+A：全部在 `/opt/hetzner-web/config.yaml`。
 
 ---
 
 <a id="安全说明"></a>
 ## ![Shield](docs/icon-shield.svg) 安全说明
 
-- `config.yaml` / `web_config.json` / `automation/config.yaml` 都是敏感文件，请不要提交到 Git。
+- `config.yaml` 和 `.env` 包含敏感信息，请不要提交到 Git。
 - 建议通过 HTTPS 反向代理访问。

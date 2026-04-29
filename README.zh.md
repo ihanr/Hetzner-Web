@@ -173,11 +173,15 @@ sudo systemctl restart hetzner-web.service
 <a id="项目结构"></a>
 ## ![Layout](docs/icon-layout.svg) 项目结构
 
-- Web 控制台（本目录）：FastAPI + Vue，Docker 优先
-- 自动化监控：`automation/`（CLI/Systemd 服务）
-
-相关文档：
-- Automation 说明：`automation/README_CN.md`
+- **Web 控制台** (`app/`)：采用模块化 FastAPI 架构
+  - `app/main.py`: 程序入口与后台任务生命周期管理
+  - `app/api/`: REST API 路由定义
+  - `app/services/`: 第三方集成（Hetzner, Telegram, Cloudflare, qBittorrent）
+  - `app/tasks/`: 流量监控与自动化调度循环
+  - `app/core/`: 核心配置与全局状态管理
+  - `app/utils/`: 统计计算与格式化工具集
+- **前端界面** (`static/`): Vue 编译后的静态资源
+- **自动化脚本** (`automation/`): 独立运行的监控逻辑（CLI/Systemd）
 
 ---
 
@@ -189,14 +193,13 @@ sudo systemctl restart hetzner-web.service
 - CI 工作流：`.github/workflows/ci.yml`
   - push / pull request 自动做 Python 编译检查
 - PR 模板：`.github/pull_request_template.md`
-- Issue 模板：`.github/ISSUE_TEMPLATE/`
 
 建议贡献流程：
 
 ```bash
 git checkout -b feat/your-change
 # 修改代码
-python3 -m py_compile main.py automation/*.py scripts/*.py
+python3 -m py_compile app/*.py app/*/*.py automation/*.py
 git add .
 git commit -m "feat: your change"
 git push origin feat/your-change

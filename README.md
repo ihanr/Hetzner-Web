@@ -173,11 +173,15 @@ Quick checks:
 <a id="project-layout"></a>
 ## ![Layout](docs/icon-layout.svg) Project Layout
 
-- Web dashboard (this directory): FastAPI + Vue, Docker-first
-- Automation monitor: `automation/` (CLI/systemd service)
-
-More docs:
-- Automation docs: `automation/README.md`
+- **Web Dashboard** (`app/`): Modular FastAPI architecture
+  - `app/main.py`: Entry point and background task lifecycle
+  - `app/api/`: REST API route definitions
+  - `app/services/`: Integrations (Hetzner, Telegram, Cloudflare, qBittorrent)
+  - `app/tasks/`: Traffic monitoring and scheduling loops
+  - `app/core/`: Configuration and global state
+  - `app/utils/`: Statistics and formatting helpers
+- **Frontend** (`static/`): Compiled Vue assets
+- **Automation Scripts** (`automation/`): Standalone monitor logic (CLI/systemd)
 
 ---
 
@@ -189,14 +193,13 @@ This repository includes basic GitHub collaboration guardrails:
 - CI workflow: `.github/workflows/ci.yml`
   - Runs Python compile checks on push and pull requests
 - PR template: `.github/pull_request_template.md`
-- Issue templates: `.github/ISSUE_TEMPLATE/`
 
 Recommended contributor flow:
 
 ```bash
 git checkout -b feat/your-change
 # edit files
-python3 -m py_compile main.py automation/*.py scripts/*.py
+python3 -m py_compile app/*.py app/*/*.py automation/*.py
 git add .
 git commit -m "feat: your change"
 git push origin feat/your-change

@@ -1,6 +1,10 @@
 hetzner:
   api_token: "YOUR_HETZNER_API_TOKEN"
 
+web:
+  username: "admin"
+  password: "CHANGE_ME"
+
 traffic:
   limit_gb: 18432
   check_interval: 5
@@ -28,7 +32,7 @@ scheduler:
 telegram:
   enabled: false
   bot_token: "YOUR_TELEGRAM_BOT_TOKEN"
-  chat_id: "YOUR_TELEGRAM_CHAT_ID"
+  chat_id: "YOUR_CHAT_ID"
   notify_levels: [80, 90, 95, 100]
   daily_report_time: "23:55"
 

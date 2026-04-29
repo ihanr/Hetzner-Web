@@ -9,9 +9,8 @@ from fastapi import Request, HTTPException
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 STATIC_DIR = os.path.join(APP_ROOT, "static")
 
+# 优先级：环境变量 > config.yaml
 CONFIG_PATH = os.environ.get("HETZNER_CONFIG_PATH", os.path.join(APP_ROOT, "config.yaml"))
-WEB_CONFIG_PATH = os.environ.get("WEB_CONFIG_PATH", os.path.join(APP_ROOT, "web_config.json"))
-THRESHOLD_STATE_PATH = os.environ.get("THRESHOLD_STATE_PATH", os.path.join(APP_ROOT, "threshold_state.json"))
 REPORT_STATE_PATH = os.environ.get("REPORT_STATE_PATH", os.path.join(APP_ROOT, "report_state.json"))
 REPORT_STATE_BACKUP_DIR = os.environ.get("REPORT_STATE_BACKUP_DIR", os.path.join(APP_ROOT, "report_state_backups"))
 REPORT_STATE_BACKUP_KEEP = 3
@@ -45,9 +44,13 @@ def get_basic_auth(request: Request) -> Optional[tuple]:
     except Exception: return None
 
 def require_auth(request: Request) -> None:
-    web_cfg = load_json(WEB_CONFIG_PATH)
-    target_user = web_cfg.get("username", "admin")
-    target_pass = web_cfg.get("password", "CHANGE_ME")
+    config = load_yaml(CONFIG_PATH)
+    web_cfg = config.get("web", {})
+    
+    # 支持环境变量直接注入
+    target_user = os.environ.get("WEB_USERNAME") or web_cfg.get("username", "admin")
+    target_pass = os.environ.get("WEB_PASSWORD") or web_cfg.get("password", "CHANGE_ME")
+    
     auth = get_basic_auth(request)
     if not auth or not (hmac.compare_digest(auth[0], target_user) and hmac.compare_digest(auth[1], target_pass)):
         raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Basic"})

@@ -69,11 +69,13 @@ curl -fsSL https://raw.githubusercontent.com/liuweiqiang0523/Hetzner-Web/main/sc
 <a id="安装方式"></a>
 ## ![Install](docs/icon-install.svg) 安装方式
 
-- 二合一（推荐）：`scripts/install-all.sh`
-- 只装 Web：`scripts/install-docker.sh`
-- 只装 automation：`automation/install_hetzner_monitor.sh`
+推荐使用一键安装脚本，一次性装好 Web 控制台 + 流量监控：
 
-默认不会影响已有部署。二合一脚本发现目录已存在会直接退出。如果你确实要更新已有安装：
+```bash
+curl -fsSL https://raw.githubusercontent.com/liuweiqiang0523/Hetzner-Web/main/scripts/install-all.sh | sudo bash
+```
+
+默认不会影响已有部署。如果你要更新已有安装：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/liuweiqiang0523/Hetzner-Web/main/scripts/install-all.sh | sudo ALLOW_UPDATE=1 bash

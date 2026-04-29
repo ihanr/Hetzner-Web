@@ -69,11 +69,13 @@ Use it when you want visibility first, automation second, and manual control alw
 <a id="install-options"></a>
 ## ![Install](docs/icon-install.svg) Install Options
 
-- All-in-one (recommended): `scripts/install-all.sh`
-- Web-only: `scripts/install-docker.sh`
-- Automation-only: `automation/install_hetzner_monitor.sh`
+Use the all-in-one script to install Web dashboard + traffic monitor in one go:
 
-Existing deployments are safe by default. The all-in-one script exits if the install dir exists. If you really want to update an existing install:
+```bash
+curl -fsSL https://raw.githubusercontent.com/liuweiqiang0523/Hetzner-Web/main/scripts/install-all.sh | sudo bash
+```
+
+Existing deployments are safe. To update an existing install:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/liuweiqiang0523/Hetzner-Web/main/scripts/install-all.sh | sudo ALLOW_UPDATE=1 bash

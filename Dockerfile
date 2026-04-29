@@ -1,11 +1,29 @@
+# 构建阶段
+FROM python:3.11-slim as builder
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# 运行阶段
 FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# 从构建阶段拷贝已安装的包
+COPY --from=builder /root/.local /root/.local
+ENV PATH=/root/.local/bin:$PATH
 
-COPY . /app
+# 拷贝代码
+COPY . .
+
+# 环境变量设置
+ENV PYTHONPATH=/app
+ENV HETZNER_CONFIG_PATH=/app/config.yaml
+ENV WEB_CONFIG_PATH=/app/web_config.json
 
 EXPOSE 1227
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "1227"]
+
+# 启动新的模块化入口
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "1227"]

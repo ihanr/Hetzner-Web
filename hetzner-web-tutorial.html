@@ -30,9 +30,10 @@
 
   <h2>2. 仓库结构</h2>
   <pre><code>Hetzner-Web/
-├─ automation/       # 自动化监控 + Telegram
-├─ static/           # Web 前端
-├─ main.py           # Web + 后台调度
+├─ app/              # 模块化核心 (FastAPI + 后台任务)
+├─ automation/       # 独立自动化脚本 (CLI/Systemd)
+├─ static/           # Web 前端静态资源
+├─ Dockerfile        # 多阶段构建优化
 └─ docker-compose.yml
 </code></pre>
 

@@ -4,9 +4,6 @@ web_config.json
 .env
 report_state.json
 report_state_backups/
-threshold_state.json
-*.pem
-*.key
 
 # Python 缓存
 __pycache__/
@@ -21,7 +18,6 @@ venv/
 .vscode/
 .idea/
 *.swp
-.worktrees/
 
 # Docker
 .docker/

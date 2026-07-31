@@ -1,6 +1,21 @@
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
+
+
+def get_server_location_name(server: Dict[str, Any]) -> str:
+    location = server.get("location") or {}
+    name = location.get("name")
+    if name:
+        return str(name)
+
+    datacenter = server.get("datacenter") or {}
+    legacy_location = datacenter.get("location") or {}
+    legacy_name = legacy_location.get("name")
+    if legacy_name:
+        return str(legacy_name)
+
+    raise ValueError("Hetzner server response does not contain a location name")
 
 def bytes_to_tb(value_bytes: float) -> Decimal:
     return (Decimal(value_bytes) / (Decimal(1024) ** 4)).quantize(

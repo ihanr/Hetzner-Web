@@ -10,7 +10,12 @@ from app.core.config import (
     CF_REBUILD_SYNC_DELAY_SECONDS, save_yaml
 )
 from app.core.state import REBUILD_LOCKS, QB_COOLDOWN_UNTIL, get_now_local
-from app.utils.helpers import parse_int_or_default, parse_float_or_default, format_iso
+from app.utils.helpers import (
+    format_iso,
+    get_server_location_name,
+    parse_float_or_default,
+    parse_int_or_default,
+)
 from app.services.cloudflare import resolve_cf_record, verify_dns_record
 
 class HetznerClient:
@@ -86,7 +91,7 @@ class HetznerClient:
         
         create_data = {
             "name": old["name"], "server_type": old["server_type"]["name"],
-            "image": image, "location": old["datacenter"]["location"]["name"],
+            "image": image, "location": get_server_location_name(old),
             "start_after_create": True
         }
         for _ in range(3):

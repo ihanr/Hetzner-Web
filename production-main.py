@@ -994,6 +994,86 @@ class HetznerClient:
             page += 1
         return items
 
+    def _resource_exists(self, endpoint: str) -> bool:
+        try:
+            self._request("GET", endpoint)
+            return True
+        except requests.HTTPError as exc:
+            response = getattr(exc, "response", None)
+            if getattr(response, "status_code", None) == 404:
+                return False
+            raise
+
+    def wait_for_rebuild_resources(
+        self,
+        server_id: int,
+        primary_ip_ids: List[int],
+        timeout_seconds: float,
+        poll_seconds: float,
+    ) -> Dict[str, Any]:
+        timeout_seconds = max(0.0, float(timeout_seconds))
+        poll_seconds = max(0.1, float(poll_seconds))
+        resources = [(f"server:{server_id}", f"servers/{server_id}")]
+        seen_primary_ips = set()
+        for primary_ip_id in primary_ip_ids:
+            normalized_id = int(primary_ip_id)
+            if normalized_id in seen_primary_ips:
+                continue
+            seen_primary_ips.add(normalized_id)
+            resources.append(
+                (
+                    f"primary_ip:{normalized_id}",
+                    f"primary_ips/{normalized_id}",
+                )
+            )
+
+        started_at = time.monotonic()
+        while True:
+            remaining_resources: List[str] = []
+            for resource_name, endpoint in resources:
+                try:
+                    if self._resource_exists(endpoint):
+                        remaining_resources.append(resource_name)
+                except Exception as exc:
+                    error = _hetzner_http_error(exc)
+                    return {
+                        "success": False,
+                        "error": (
+                            "检查旧服务器资源释放状态失败: "
+                            f"{error.get('message') or exc}"
+                        ),
+                        "error_code": "primary_ip_release_check_failed",
+                        "resource": resource_name,
+                        "http_status": error.get("status"),
+                    }
+
+            elapsed = max(0.0, time.monotonic() - started_at)
+            if not remaining_resources:
+                return {
+                    "success": True,
+                    "waited_seconds": round(elapsed, 3),
+                }
+
+            remaining_time = timeout_seconds - elapsed
+            if remaining_time <= 0:
+                timeout_text = (
+                    str(int(timeout_seconds))
+                    if timeout_seconds.is_integer()
+                    else str(timeout_seconds)
+                )
+                return {
+                    "success": False,
+                    "error": (
+                        "等待旧服务器 Primary IP 释放超时"
+                        f"（{timeout_text}秒）"
+                    ),
+                    "error_code": "primary_ip_release_timeout",
+                    "remaining_resources": remaining_resources,
+                    "waited_seconds": round(elapsed, 3),
+                }
+
+            time.sleep(min(poll_seconds, remaining_time))
+
     def get_servers(self) -> List[Dict[str, Any]]:
         return self._request_paginated("servers", "servers")
 
@@ -1238,10 +1318,40 @@ class HetznerClient:
         if not locations:
             return {"success": False, "error": "没有可用的重建地区"}
 
+        public_net = old_server.get("public_net") or {}
+        primary_ip_ids: List[int] = []
+        for family in ("ipv4", "ipv6"):
+            primary_ip_id = (public_net.get(family) or {}).get("id")
+            if primary_ip_id is not None:
+                primary_ip_ids.append(int(primary_ip_id))
+
         if not self.delete_server(server_id):
             return {"success": False, "error": "删除服务器失败"}
 
-        time.sleep(5)
+        rebuild_cfg = config.get("rebuild") or {}
+        timeout_seconds = max(
+            0.0,
+            _parse_float_or_default(
+                rebuild_cfg.get("primary_ip_release_timeout_seconds"),
+                120.0,
+            ),
+        )
+        poll_seconds = max(
+            0.1,
+            _parse_float_or_default(
+                rebuild_cfg.get("primary_ip_release_poll_seconds"),
+                3.0,
+            ),
+        )
+        release_result = self.wait_for_rebuild_resources(
+            server_id,
+            primary_ip_ids,
+            timeout_seconds,
+            poll_seconds,
+        )
+        if not release_result.get("success"):
+            return release_result
+
         attempted_locations: List[str] = []
         capacity_errors: List[Dict[str, Any]] = []
         new_server: Optional[Dict[str, Any]] = None

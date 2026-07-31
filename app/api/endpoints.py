@@ -11,7 +11,7 @@ from app.core.state import get_now_local
 from app.services.hetzner import HetznerClient, perform_rebuild
 from app.services.qbittorrent import collect_qbittorrent_stats
 from app.services.cloudflare import verify_dns_record
-from app.utils.helpers import bytes_to_tb, quantize_tb
+from app.utils.helpers import bytes_to_tb, get_server_location_name, quantize_tb
 from app.utils.stats import (
     merge_hourly_series, compute_tracking_totals, detect_last_rebuilds,
     summarize_rebuild_stats, compute_cycle_data
@@ -38,7 +38,7 @@ def api_servers(request: Request):
         rows.append({
             "id": s["id"], "name": s["name"], "status": s["status"],
             "ip": s["public_net"]["ipv4"]["ip"] if s["public_net"].get("ipv4") else None,
-            "server_type": s["server_type"]["name"], "location": s["datacenter"]["location"]["name"],
+            "server_type": s["server_type"]["name"], "location": get_server_location_name(s),
             "outbound_tb": str(bytes_to_tb(float(outgoing))) if outgoing else "0.000",
             "inbound_tb": str(bytes_to_tb(float(ingoing))) if ingoing else "0.000",
             "outbound_bytes": outgoing, "inbound_bytes": ingoing,
